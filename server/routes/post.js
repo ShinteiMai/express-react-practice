@@ -1,40 +1,18 @@
-const express = require('express');
-
+const express = require("express");
 const router = express.Router();
 
+const postController = require('../controllers/post');
 
-// * NGAMBIL POSTS
-router.get('/', (req, res, next) => {
-    // * req = request
-    // * res = response
-    // * next = lanjutin request/response
-    
-    // * kita harus kirim json yang strukturnya ada title sama content
+// * NGAMBIL POSTS (http://localhost:3003/)
+router.get("/", postController.getPosts);
 
-    const data = {
-        title: 'Purpletart new blog',
-        content: 'Blog baru'
-    }
-    res.json(data);
-});
+// * CREATE POST (http://localhost:3003/post)
+router.post("/post", postController.createPost);
 
-// * KIRIM POSTS (http://localhost:3003/post)
-router.post('/post', (req, res, next) => {
-    // * berkat bodyParser() kita tinggal akses req.body
-    console.log(req.body);
-    const title = req.body.title;
-    const content = req.body.content;
-    console.log('Title: ' + title);
-    console.log('Content: ' + content);
-    const newPost = {
-        title: title,
-        content: content
-    }
-    res.status(200).json({
-        message: 'Post created successfully',
-        post: newPost
-    })
-});
+// * UPDATE POST (http://localhost:3003/post/:postId)
+router.put("/post/:id", postController.updatePost);
 
+// * DELETE POST (http://localhost:3003/post/:postId)
+router.delete("/post/:postId", postController.deletePost);
 
 module.exports = router;

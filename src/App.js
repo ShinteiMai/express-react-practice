@@ -1,16 +1,21 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import "./App.css";
 
 const App = () => {
   const [posts, setPosts] = useState([]);
   const [currentPost, setCurrentPost] = useState({
+    _id: "",
+    title: "",
+    content: "",
+  });
+  const [currentEditPost, setCurrentEditPost] = useState({
+    _id: "",
     title: "",
     content: "",
   });
 
-  const fetchPostHandler = () => {
-    // console.log('I was clicked');
+  useEffect(() => {
     axios({
       method: "GET",
       url: "http://localhost:3003/",
@@ -19,24 +24,36 @@ const App = () => {
       },
     })
       .then((response) => {
-        const newPost = response.data;
-        // * newPost = {content: "asd", title: "asd"};
+        const newPost = response.data.posts;
         setPosts(posts.concat(newPost));
       })
       .catch((err) => {
         console.log(err);
       });
-  };
+  }, []);
 
-  let transformedPosts = [];
-  for (let post of posts) {
-    transformedPosts.push(
-      <div>
-        <p>Title: {post.title}</p>
-        <p>Content: {post.content}</p>
-      </div>
-    );
-  }
+  const deletePostHandler = (postId) => {
+    // * DELETE DI BACKEND
+    axios({
+      method: "DELETE",
+      url: "http://localhost:3003/post/" + postId,
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
+      .then((result) => {
+        console.log(result);
+        setPosts(
+          posts.filter((post) => {
+            return post._id !== postId;
+          })
+        );
+        // * DELETE DI FRONTEND
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  };
 
   const currentPostHandler = (event, selector) => {
     // * ada let sama const
@@ -64,19 +81,97 @@ const App = () => {
       headers: {
         "Content-Type": "application/json",
       },
-      data: currentPost
+      data: currentPost,
     })
       .then((response) => {
-        console.log(response);
+        return axios({
+          method: "GET",
+          url: "http://localhost:3003/",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+      })
+      .then((response) => {
+        const newPosts = response.data.posts;
+        setPosts(newPosts);
       })
       .catch((err) => {
         console.log(err);
       });
   };
 
+  const editPostHandler = (postId) => {
+    const post = posts.find((post) => {
+      return post._id === postId;
+    });
+    setCurrentEditPost(post);
+  };
+
+  const updateEditPostHandler = (event, selector) => {
+    if (selector === "title") {
+      setCurrentEditPost({
+        ...currentEditPost,
+        title: event.target.value,
+      });
+    } else if (selector === "content") {
+      setCurrentEditPost({
+        ...currentEditPost,
+        content: event.target.value,
+      });
+    }
+  };
+
+  const updatePostHandler = (event) => {
+    event.preventDefault();
+    axios({
+      method: "PUT",
+      url: "http://localhost:3003/post/" + currentEditPost._id,
+      headers: {
+        "Content-Type": "application/json",
+      },
+      data: currentEditPost
+    })
+      .then(response => {
+        return axios({
+          method: "GET",
+          url: "http://localhost:3003/",
+          headers: {
+            "Content-Type": "application/json"
+          }
+        })
+      })
+      .then(response => {
+        setPosts(response.data.posts);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  };
+
+  let transformedPosts = [];
+  for (let post of posts) {
+    transformedPosts.push(
+      <div
+        key={post._id}
+        style={{ border: "1px solid blue", textAlign: "center" }}
+      >
+        <p>Title: {post.title}</p>
+        <p>Content: {post.content}</p>
+        <button onClick={() => deletePostHandler(post._id)}>Delete Post</button>
+        <button onClick={() => editPostHandler(post._id)}>Edit Post</button>
+      </div>
+    );
+  }
+
   return (
     <div>
-      <div>
+      <div
+        style={{
+          textAlign: "center",
+          margin: "16px auto",
+        }}
+      >
         <h1>Make a post</h1>
         <form>
           <div>
@@ -109,7 +204,42 @@ const App = () => {
       >
         {transformedPosts}
       </div>
-      <button onClick={fetchPostHandler}>Fetch Post</button>
+
+      <div
+        style={{
+          textAlign: "center",
+          margin: "16px auto",
+        }}
+      >
+        <h1>Edit a Post</h1>
+        <h3>
+          You are editing:{" "}
+          {currentEditPost.title ? currentEditPost.title : "None"}
+        </h3>
+        <div>
+          <form>
+            <div>
+              <label>Title</label>
+              <input
+                value={currentEditPost.title}
+                onChange={(event) => updateEditPostHandler(event, "title")}
+                type="text"
+              />
+            </div>
+            <div>
+              <label>Content</label>
+              <input
+                value={currentEditPost.content}
+                onChange={(event) => updateEditPostHandler(event, "content")}
+                type="text"
+              />
+            </div>
+            <button type="submit" onClick={(event) => updatePostHandler(event)}>
+              Update Post
+            </button>
+          </form>
+        </div>
+      </div>
     </div>
   );
 };
